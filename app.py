@@ -41,7 +41,16 @@ st.markdown("""
     div[data-testid="stVerticalBlock"] > div:nth-child(1) button { background-color: #ff4b4b; color: white; }
     div[data-testid="stVerticalBlock"] > div:nth-child(2) button { background-color: #ffa500; color: white; }
     div[data-testid="stVerticalBlock"] > div:nth-child(3) button { background-color: #555555; color: white; }
-    .metric-card { background-color: #1a2332; padding: 15px; border-radius: 10px; border: 1px solid #2a3548; height: 100%; }
+    
+    /* FIX: Target Streamlit's native columns to act as the dark cards */
+    [data-testid="column"] { 
+        background-color: #1a2332; 
+        padding: 20px; 
+        border-radius: 10px; 
+        border: 1px solid #2a3548; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    }
+    
     .suspicious-pill { display: inline-block; background-color: rgba(255, 75, 75, 0.15); color: #ff4b4b; border: 1px solid #ff4b4b; padding: 4px 10px; border-radius: 15px; margin: 4px; font-size: 0.85em; font-weight: bold; }
 </style>
 """, unsafe_allow_html=True)
@@ -294,9 +303,8 @@ if st.session_state.analyze_clicked:
 
         col1, col2, col3, col4 = st.columns(4)
 
-        # Col 1: Elements
+        # Col 1: Elements (No more manual <div> tags)
         with col1:
-            st.markdown("<div class='metric-card'>", unsafe_allow_html=True)
             st.markdown("##### 🚨 SUSPICIOUS ELEMENTS")
             found_words = extract_suspicious_words(sms_input)
             if found_words:
@@ -310,14 +318,10 @@ if st.session_state.analyze_clicked:
                 st.markdown("<br><b>Detected Links:</b>", unsafe_allow_html=True)
                 for link in links:
                     st.markdown(f"<span style='color: #ff4b4b; font-size: 0.9em;'>🔗 {link}</span>", unsafe_allow_html=True)
-            st.markdown("</div>", unsafe_allow_html=True)
 
         # Col 2: Translate
         with col2:
-            st.markdown("<div class='metric-card'>", unsafe_allow_html=True)
             st.markdown("##### 🔤 TRANSLATE SMS")
-            
-            # Selectbox triggers a rerun, but session state keeps the UI visible!
             lang = st.selectbox("Select Language", ["English (EN)", "Hindi (HI)", "Odia (OR)"], label_visibility="collapsed")
             
             if "English" not in lang:
@@ -329,18 +333,16 @@ if st.session_state.analyze_clicked:
                     st.error("Translation unavailable.")
             else:
                 st.markdown("<p style='font-size: 0.9em; margin-top: 10px; color: #888;'>Translation off.</p>", unsafe_allow_html=True)
-            st.markdown("</div>", unsafe_allow_html=True)
 
         # Col 3: Confidence
         with col3:
-            st.markdown("<div class='metric-card' style='text-align: center;'>", unsafe_allow_html=True)
+            st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
             st.markdown("##### 🎯 SPAM CONFIDENCE")
             
             risk_color = "#ff4b4b" if is_spam else "#00ff00"
             risk_level = "High Risk" if is_spam else "Low Risk"
             category = categorize_message(sms_input)
 
-            # Updated gauge to fix visibility issue
             fig = go.Figure(go.Indicator(
                 mode = "gauge+number",
                 value = confidence,
@@ -348,7 +350,7 @@ if st.session_state.analyze_clicked:
                 domain = {'x': [0, 1], 'y': [0, 1]},
                 gauge = {
                     'axis': {'range': [0, 100], 'visible': False},
-                    'bar': {'color': risk_color, 'thickness': 0.6}, # Made the bar highly visible and dynamic
+                    'bar': {'color': risk_color, 'thickness': 0.6},
                     'bgcolor': "#2a3548",
                     'steps': [
                         {'range': [0, 33], 'color': "rgba(0, 255, 0, 0.15)"},
@@ -366,10 +368,8 @@ if st.session_state.analyze_clicked:
 
         # Col 4: Recommended Actions
         with col4:
-            st.markdown("<div class='metric-card'>", unsafe_allow_html=True)
             st.markdown("##### ⚡ RECOMMENDED ACTIONS")
             
-            # Wrapped Actions in an is_spam check
             if is_spam:
                 st.button("REPORT SMS", use_container_width=True)
                 st.button("BLOCK SENDER", use_container_width=True)
@@ -379,7 +379,6 @@ if st.session_state.analyze_clicked:
                 actions = suggest_action(sms_input, category, links)
                 
                 for act in actions:
-                    # Translating the actions dynamically if language is selected
                     if "English" not in lang:
                         try:
                             display_act = GoogleTranslator(source='auto', target=target_lang).translate(act)
@@ -390,8 +389,5 @@ if st.session_state.analyze_clicked:
                     
                     st.markdown(f"<p style='font-size: 0.8em; margin-bottom: 4px;'>{display_act}</p>", unsafe_allow_html=True)
             else:
-                # Fallback UI for safe messages
                 st.markdown("<p style='color: #00ff00; margin-top: 20px; font-weight: bold; text-align: center;'>✅ Safe message.</p>", unsafe_allow_html=True)
                 st.markdown("<p style='color: #888; text-align: center;'>No action required.</p>", unsafe_allow_html=True)
-
-            st.markdown("</div>", unsafe_allow_html=True)
