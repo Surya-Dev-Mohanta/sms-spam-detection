@@ -141,7 +141,7 @@ def load_and_train():
         df['label'] = df['label'].map({'ham': 0, 'spam': 1})
         df['clean_msg'] = df['message'].apply(clean_text)
 
-        vectorizer = TfidfVectorizer(ngram_range=(1,2), max_features=5000)
+        vectorizer = TfidfVectorizer(ngram_range=(1,2), max_features=500)
         X = vectorizer.fit_transform(df['clean_msg'])
         y = df['label']
 
