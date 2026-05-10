@@ -2,6 +2,5 @@ streamlit
 pandas
 scikit-learn
 deep-translator
+plotly
 nltk
-matplotlib
-seaborn
