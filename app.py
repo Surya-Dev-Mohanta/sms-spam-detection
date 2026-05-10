@@ -20,70 +20,29 @@ except LookupError:
     nltk.download('stopwords')
 
 # ==============================
-# PAGE CONFIGURATION
+# PAGE CONFIGURATION & STATE
 # ==============================
 st.set_page_config(page_title="SMS Sentinel", page_icon="🛡️", layout="wide")
 
-# Custom CSS to match the dark, neon-cyan aesthetic from the image
+# Initialize session state so results don't disappear on language change
+if "analyze_clicked" not in st.session_state:
+    st.session_state.analyze_clicked = False
+
+def trigger_analysis():
+    st.session_state.analyze_clicked = True
+
+# Custom CSS
 st.markdown("""
 <style>
-    /* Main Background & Text */
-    .stApp {
-        background-color: #0f141e;
-        color: #e0e0e0;
-    }
-    
-    /* Input Box Glowing Border */
-    .stTextArea textarea {
-        background-color: #1a2332 !important;
-        color: white !important;
-        border: 2px solid #00f0ff !important;
-        border-radius: 8px !important;
-        box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
-    }
-    
-    /* Cyan Analyze Button */
-    .stButton > button {
-        background: linear-gradient(90deg, #00d4ff 0%, #00f0ff 100%);
-        color: #0a0e17;
-        font-weight: bold;
-        border: none;
-        width: 100%;
-        border-radius: 8px;
-        padding: 10px;
-        transition: all 0.3s ease;
-    }
-    .stButton > button:hover {
-        box-shadow: 0 0 15px rgba(0, 240, 255, 0.6);
-        color: #000;
-    }
-    
-    /* Action Buttons Custom Styling */
+    .stApp { background-color: #0f141e; color: #e0e0e0; }
+    .stTextArea textarea { background-color: #1a2332 !important; color: white !important; border: 2px solid #00f0ff !important; border-radius: 8px !important; box-shadow: 0 0 10px rgba(0, 240, 255, 0.2); }
+    .stButton > button { background: linear-gradient(90deg, #00d4ff 0%, #00f0ff 100%); color: #0a0e17; font-weight: bold; border: none; width: 100%; border-radius: 8px; padding: 10px; transition: all 0.3s ease; }
+    .stButton > button:hover { box-shadow: 0 0 15px rgba(0, 240, 255, 0.6); color: #000; }
     div[data-testid="stVerticalBlock"] > div:nth-child(1) button { background-color: #ff4b4b; color: white; }
     div[data-testid="stVerticalBlock"] > div:nth-child(2) button { background-color: #ffa500; color: white; }
     div[data-testid="stVerticalBlock"] > div:nth-child(3) button { background-color: #555555; color: white; }
-    
-    /* Cards */
-    .metric-card {
-        background-color: #1a2332;
-        padding: 15px;
-        border-radius: 10px;
-        border: 1px solid #2a3548;
-        height: 100%;
-    }
-    
-    /* Suspicious Word Pills */
-    .suspicious-pill {
-        display: inline-block;
-        background-color: rgba(255, 75, 75, 0.15);
-        color: #ff4b4b;
-        border: 1px solid #ff4b4b;
-        padding: 4px 10px;
-        border-radius: 15px;
-        margin: 4px;
-        font-size: 0.85em;
-        font-weight: bold;
-    }
+    .metric-card { background-color: #1a2332; padding: 15px; border-radius: 10px; border: 1px solid #2a3548; height: 100%; }
+    .suspicious-pill { display: inline-block; background-color: rgba(255, 75, 75, 0.15); color: #ff4b4b; border: 1px solid #ff4b4b; padding: 4px 10px; border-radius: 15px; margin: 4px; font-size: 0.85em; font-weight: bold; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -93,7 +52,6 @@ st.markdown("""
 @st.cache_resource(show_spinner="Training AI Models... Please wait.")
 def load_and_train_models():
     if not os.path.exists("dataset_with_researched.csv"):
-        # Fallback dummy data if file is missing so the UI still loads
         df = pd.DataFrame({
             'label': [0, 1, 0, 1],
             'message': ["Hello how are you", "URGENT! You won a prize click here", "Call me later", "Your UPI is blocked verify KYC"]
@@ -127,7 +85,6 @@ def load_and_train_models():
         "Random Forest": RandomForestClassifier()
     }
     
-    # Pre-train models
     for name, model in models.items():
         model.fit(X_train, y_train)
 
@@ -142,7 +99,7 @@ def load_and_train_models():
 vectorizer, ensemble_model, clean_text_fn = load_and_train_models()
 
 # ==============================
-# SMART FEATURES LOGIC
+# SMART FEATURES LOGIC (EXACTLY AS PROVIDED)
 # ==============================
 suspicious_words = [
     "win", "winner", "won", "free", "urgent", "click", "offer", "limited", "credit", "debit", "loan",
@@ -179,39 +136,115 @@ def get_highlighted_html(text):
 
 def categorize_message(text):
     text_lower = text.lower()
-    categories = {
-        "UPI & Digital Wallet Scam": ["upi", "phonepe", "google pay", "paytm", "wallet", "collect request"],
-        "Credit Card Fraud": ["credit card", "cvv", "credit limit"],
-        "Debit Card / ATM Scam": ["debit card", "atm", "atm card"],
-        "KYC Update Scam": ["kyc", "aadhaar", "pan", "verify kyc"],
-        "Bank Account Suspension Scam": ["bank account", "account suspended", "account blocked", "bank verification"],
-        "Electricity Bill Disconnection": ["electricity", "power", "disconnect", "electricity bill"],
-        "Fake Job Offer Scam": ["job offer", "hiring", "interview", "work from home", "part time"],
-        "Lottery & Sweepstakes Scam": ["lottery", "winner", "jackpot", "sweepstakes", "prize"],
-        "Investment & Crypto Scam": ["investment", "crypto", "bitcoin", "trading", "profit"]
-    }
-    
-    for cat, keywords in categories.items():
-        if any(word in text_lower for word in keywords):
-            return cat
-    return "General Spam"
+    if any(word in text_lower for word in ["upi", "phonepe", "google pay", "paytm", "wallet", "collect request"]):
+        return "UPI & Digital Wallet Scam"
+    elif any(word in text_lower for word in ["credit card", "cvv", "credit limit"]):
+        return "Credit Card Fraud"
+    elif any(word in text_lower for word in ["debit card", "atm", "atm card"]):
+        return "Debit Card / ATM Scam"
+    elif any(word in text_lower for word in ["kyc", "aadhaar", "pan", "verify kyc"]):
+        return "KYC Update Scam"
+    elif any(word in text_lower for word in ["bank account", "account suspended", "account blocked", "bank verification"]):
+        return "Bank Account Suspension Scam"
+    elif any(word in text_lower for word in ["electricity", "power", "disconnect", "electricity bill"]):
+        return "Electricity Bill Disconnection Scam"
+    elif any(word in text_lower for word in ["income tax", "tax refund", "itr"]):
+        return "Income Tax Refund Scam"
+    elif any(word in text_lower for word in ["challan", "traffic fine", "e-challan"]):
+        return "Traffic E-Challan Scam"
+    elif any(word in text_lower for word in ["job offer", "hiring", "interview"]):
+        return "Fake Job Offer Scam"
+    elif any(word in text_lower for word in ["work from home", "part time", "earn daily", "earn money"]):
+        return "Part-Time / Work-From-Home Scam"
+    elif any(word in text_lower for word in ["loan", "instant loan", "quick loan"]):
+        return "Instant Loan Scam"
+    elif any(word in text_lower for word in ["parcel", "delivery", "courier", "customs", "package"]):
+        return "Package Delivery / Customs Scam"
+    elif any(word in text_lower for word in ["lottery", "winner", "jackpot", "sweepstakes", "prize"]):
+        return "Lottery & Sweepstakes Scam"
+    elif any(word in text_lower for word in ["sim", "telecom", "sim blocked"]):
+        return "Telecom / SIM Block Scam"
+    elif any(word in text_lower for word in ["customer care", "support", "helpline", "remote access"]):
+        return "Fake Customer Care / Tech Support Scam"
+    elif any(word in text_lower for word in ["subscription", "renewal", "netflix", "amazon prime"]):
+        return "Subscription & Service Renewal Scam"
+    elif any(word in text_lower for word in ["investment", "crypto", "bitcoin", "trading", "profit"]):
+        return "Investment & Cryptocurrency Scam"
+    elif any(word in text_lower for word in ["casino", "bet", "gaming", "gambling"]):
+        return "Online Gaming & Casino Scam"
+    elif any(word in text_lower for word in ["urgent help", "family emergency", "send money urgently"]):
+        return "Emergency / Imposter Scam"
+    elif any(word in text_lower for word in ["reward points", "cashback", "redeem reward"]):
+        return "Fake Reward Points / Cashback Scam"
+    else:
+        return "General Spam"
 
 def suggest_action(text, category, links):
     actions = []
     text_lower = text.lower()
-    if links: actions.append("⚠️ Do NOT click on any suspicious links.")
-    if "Credit Card" in category or "Debit Card" in category:
+
+    if links:
+        actions.append("⚠️ Do NOT click on suspicious links.")
+
+    if "Credit Card" in category:
         actions.append("💳 Never share your CVV, PIN, or OTP.")
-    if "UPI" in category:
+        actions.append("🏦 Banks never ask for card details via SMS.")
+    elif "Debit Card" in category:
+        actions.append("🏧 Never share ATM PIN or OTP.")
+        actions.append("🚫 Block your card if suspicious activity is found.")
+    elif "UPI" in category:
         actions.append("📲 Never approve unknown collect requests.")
-    if "KYC" in category:
+        actions.append("🔐 UPI scams can instantly steal money.")
+    elif "KYC" in category:
         actions.append("🪪 Verify KYC updates only on official websites.")
-    if "Electricity" in category:
-        actions.append("⚡ Contact your electricity board directly. Do not pay via SMS links.")
+        actions.append("🚫 Never upload Aadhaar/PAN on unknown links.")
+    elif "Bank" in category:
+        actions.append("🏦 Contact your bank directly using official numbers.")
+        actions.append("🔐 Never share banking credentials.")
+    elif "Electricity" in category:
+        actions.append("⚡ Verify electricity bill alerts from official apps.")
+        actions.append("🚫 Fake bill scams often create panic.")
+    elif "Income Tax" in category:
+        actions.append("💰 Check tax refunds only on official government portals.")
+    elif "Traffic" in category:
+        actions.append("🚦 Verify e-challans on official transport websites.")
+    elif "Job" in category or "Work-From-Home" in category:
+        actions.append("💼 Genuine jobs never ask for upfront payment.")
+        actions.append("🚫 Avoid sharing personal documents carelessly.")
+    elif "Loan" in category:
+        actions.append("💰 Avoid instant loan scams with advance fees.")
+        actions.append("📄 Verify RBI-registered lenders only.")
+    elif "Package" in category:
+        actions.append("📦 Verify courier updates from official delivery apps.")
+    elif "Lottery" in category:
+        actions.append("🎁 Genuine lotteries do not ask for processing fees.")
+    elif "Telecom" in category:
+        actions.append("📶 Contact telecom providers only through official apps.")
+    elif "Customer Care" in category:
+        actions.append("🛠️ Never install remote access apps for support.")
+        actions.append("🚫 Fake support agents can steal banking details.")
+    elif "Subscription" in category:
+        actions.append("📺 Verify renewals from official service providers.")
+    elif "Investment" in category:
+        actions.append("📈 High guaranteed returns are usually scams.")
+        actions.append("🚫 Be cautious with crypto investment messages.")
+    elif "Gaming" in category:
+        actions.append("🎮 Avoid gambling and betting links from SMS.")
+    elif "Emergency" in category:
+        actions.append("📞 Confirm emergencies directly with family members.")
+    elif "Cashback" in category:
+        actions.append("🎁 Fake cashback links can steal login credentials.")
+
     if "otp" in text_lower or "urgent" in text_lower:
-        actions.append("🔐 Scammers create urgency. Never share OTPs.")
+        actions.append("🔐 Never share OTP with anyone.")
+        actions.append("⏳ Scammers create urgency to trick victims.")
+
+    if "call" in text_lower or "contact" in text_lower:
+        actions.append("📞 Avoid calling unknown numbers from suspicious SMS.")
+
     if not actions:
-        actions.append("⚠️ Be cautious. Verify the sender before taking any action.")
+        actions.append("⚠️ Be cautious. Verify sender before taking action.")
+
     return actions
 
 # ==============================
@@ -224,11 +257,14 @@ st.markdown("<p style='color: #888; margin-top: -15px;'>AI-Powered Spam Detectio
 st.markdown("### SMS INPUT")
 sms_input = st.text_area("Enter SMS content here...", height=100, label_visibility="collapsed")
 
-if st.button("ANALYZE MESSAGE"):
+# Connect the button to the session state function
+st.button("ANALYZE MESSAGE", on_click=trigger_analysis)
+
+# Only show results if the button has been clicked AND there is text
+if st.session_state.analyze_clicked:
     if sms_input.strip() == "":
         st.warning("Please enter a message to analyze.")
     else:
-        # Prediction
         cleaned = clean_text_fn(sms_input)
         vector = vectorizer.transform([cleaned])
         pred = ensemble_model.predict(vector)[0]
@@ -237,7 +273,7 @@ if st.button("ANALYZE MESSAGE"):
         is_spam = pred == 1
         confidence = prob * 100
 
-        # Analysis Banner
+        # Banner
         if is_spam:
             st.markdown(f"""
             <div style="background-color: rgba(255, 0, 0, 0.1); border: 1px solid #ff4b4b; border-radius: 8px; padding: 15px; margin-top: 15px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center;">
@@ -253,14 +289,12 @@ if st.button("ANALYZE MESSAGE"):
             </div>
             """, unsafe_allow_html=True)
 
-        # Smart Highlighted Text
         st.markdown("**Highlighted Content:**")
         st.markdown(f"<div style='background: #1a2332; padding: 10px; border-radius: 5px; margin-bottom: 20px;'>{get_highlighted_html(sms_input)}</div>", unsafe_allow_html=True)
 
-        # 4-Column Layout Dashboard
         col1, col2, col3, col4 = st.columns(4)
 
-        # Column 1: Suspicious Elements
+        # Col 1: Elements
         with col1:
             st.markdown("<div class='metric-card'>", unsafe_allow_html=True)
             st.markdown("##### 🚨 SUSPICIOUS ELEMENTS")
@@ -269,7 +303,7 @@ if st.button("ANALYZE MESSAGE"):
                 pills_html = "".join([f"<span class='suspicious-pill'>{word.capitalize()}</span>" for word in found_words])
                 st.markdown(pills_html, unsafe_allow_html=True)
             else:
-                st.write("No typical suspicious keywords found.")
+                st.write("No suspicious keywords found.")
             
             links = detect_links(sms_input)
             if links:
@@ -278,21 +312,26 @@ if st.button("ANALYZE MESSAGE"):
                     st.markdown(f"<span style='color: #ff4b4b; font-size: 0.9em;'>🔗 {link}</span>", unsafe_allow_html=True)
             st.markdown("</div>", unsafe_allow_html=True)
 
-        # Column 2: Translate SMS
+        # Col 2: Translate
         with col2:
             st.markdown("<div class='metric-card'>", unsafe_allow_html=True)
             st.markdown("##### 🔤 TRANSLATE SMS")
-            lang = st.selectbox("Select Language", ["Hindi (HI)", "Odia (OR)"], label_visibility="collapsed")
             
-            target_lang = "hi" if "Hindi" in lang else "or"
-            try:
-                translated_text = GoogleTranslator(source='auto', target=target_lang).translate(sms_input)
-                st.markdown(f"<p style='font-size: 0.9em; margin-top: 10px; color: #ccc;'>{translated_text}</p>", unsafe_allow_html=True)
-            except Exception as e:
-                st.error("Translation unavailable.")
+            # Selectbox triggers a rerun, but session state keeps the UI visible!
+            lang = st.selectbox("Select Language", ["English (EN)", "Hindi (HI)", "Odia (OR)"], label_visibility="collapsed")
+            
+            if "English" not in lang:
+                target_lang = "hi" if "Hindi" in lang else "or"
+                try:
+                    translated_text = GoogleTranslator(source='auto', target=target_lang).translate(sms_input)
+                    st.markdown(f"<p style='font-size: 0.9em; margin-top: 10px; color: #ccc;'>{translated_text}</p>", unsafe_allow_html=True)
+                except Exception as e:
+                    st.error("Translation unavailable.")
+            else:
+                st.markdown("<p style='font-size: 0.9em; margin-top: 10px; color: #888;'>Translation off.</p>", unsafe_allow_html=True)
             st.markdown("</div>", unsafe_allow_html=True)
 
-        # Column 3: Spam Confidence Gauge Chart
+        # Col 3: Confidence
         with col3:
             st.markdown("<div class='metric-card' style='text-align: center;'>", unsafe_allow_html=True)
             st.markdown("##### 🎯 SPAM CONFIDENCE")
@@ -328,26 +367,28 @@ if st.button("ANALYZE MESSAGE"):
             st.markdown(f"<p style='font-size: 0.8em; color: #888;'>Cat: {category}</p>", unsafe_allow_html=True)
             st.markdown("</div>", unsafe_allow_html=True)
 
-        # Column 4: Recommended Actions
+        # Col 4: Recommended Actions (Exactly as your code)
         with col4:
             st.markdown("<div class='metric-card'>", unsafe_allow_html=True)
             st.markdown("##### ⚡ RECOMMENDED ACTIONS")
             
-            # Action Buttons
             st.button("REPORT SMS", use_container_width=True)
             st.button("BLOCK SENDER", use_container_width=True)
             st.button("IGNORE & DELETE", use_container_width=True)
             
-            # Dynamic Code Actions
             st.markdown("<hr style='border-color: #2a3548; margin: 10px 0;'>", unsafe_allow_html=True)
             actions = suggest_action(sms_input, category, links)
+            
             for act in actions:
-                # Optional: translate the actions as requested
-                try:
-                    translated_act = GoogleTranslator(source='auto', target=target_lang).translate(act)
-                    display_act = translated_act
-                except:
+                # Translating the actions dynamically if language is selected
+                if "English" not in lang:
+                    try:
+                        display_act = GoogleTranslator(source='auto', target=target_lang).translate(act)
+                    except:
+                        display_act = act
+                else:
                     display_act = act
-                st.markdown(f"<p style='font-size: 0.8em; margin-bottom: 4px;'>• {display_act}</p>", unsafe_allow_html=True)
+                
+                st.markdown(f"<p style='font-size: 0.8em; margin-bottom: 4px;'>{display_act}</p>", unsafe_allow_html=True)
             
             st.markdown("</div>", unsafe_allow_html=True)
