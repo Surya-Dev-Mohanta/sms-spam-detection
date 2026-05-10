@@ -99,7 +99,7 @@ def load_and_train_models():
 vectorizer, ensemble_model, clean_text_fn = load_and_train_models()
 
 # ==============================
-# SMART FEATURES LOGIC (EXACTLY AS PROVIDED)
+# SMART FEATURES LOGIC
 # ==============================
 suspicious_words = [
     "win", "winner", "won", "free", "urgent", "click", "offer", "limited", "credit", "debit", "loan",
@@ -336,6 +336,11 @@ if st.session_state.analyze_clicked:
             st.markdown("<div class='metric-card' style='text-align: center;'>", unsafe_allow_html=True)
             st.markdown("##### 🎯 SPAM CONFIDENCE")
             
+            risk_color = "#ff4b4b" if is_spam else "#00ff00"
+            risk_level = "High Risk" if is_spam else "Low Risk"
+            category = categorize_message(sms_input)
+
+            # Updated gauge to fix visibility issue
             fig = go.Figure(go.Indicator(
                 mode = "gauge+number",
                 value = confidence,
@@ -343,52 +348,50 @@ if st.session_state.analyze_clicked:
                 domain = {'x': [0, 1], 'y': [0, 1]},
                 gauge = {
                     'axis': {'range': [0, 100], 'visible': False},
-                    'bar': {'color': "rgba(0,0,0,0)"},
+                    'bar': {'color': risk_color, 'thickness': 0.6}, # Made the bar highly visible and dynamic
                     'bgcolor': "#2a3548",
                     'steps': [
-                        {'range': [0, 33], 'color': "#00ff00"},
-                        {'range': [33, 66], 'color': "#ffa500"},
-                        {'range': [66, 100], 'color': "#ff4b4b"}
-                    ],
-                    'threshold': {
-                        'line': {'color': "white", 'width': 4},
-                        'thickness': 0.75,
-                        'value': confidence
-                    }
+                        {'range': [0, 33], 'color': "rgba(0, 255, 0, 0.15)"},
+                        {'range': [33, 66], 'color': "rgba(255, 165, 0, 0.15)"},
+                        {'range': [66, 100], 'color': "rgba(255, 75, 75, 0.15)"}
+                    ]
                 }
             ))
             fig.update_layout(height=180, margin=dict(l=10, r=10, t=10, b=10), paper_bgcolor="rgba(0,0,0,0)", font={'color': "white"})
             st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
             
-            category = categorize_message(sms_input)
-            risk_level = "High Risk" if is_spam else "Low Risk"
-            risk_color = "#ff4b4b" if is_spam else "#00ff00"
             st.markdown(f"<p style='color: {risk_color}; font-weight: bold; margin-top: -30px;'>{risk_level}</p>", unsafe_allow_html=True)
             st.markdown(f"<p style='font-size: 0.8em; color: #888;'>Cat: {category}</p>", unsafe_allow_html=True)
             st.markdown("</div>", unsafe_allow_html=True)
 
-        # Col 4: Recommended Actions (Exactly as your code)
+        # Col 4: Recommended Actions
         with col4:
             st.markdown("<div class='metric-card'>", unsafe_allow_html=True)
             st.markdown("##### ⚡ RECOMMENDED ACTIONS")
             
-            st.button("REPORT SMS", use_container_width=True)
-            st.button("BLOCK SENDER", use_container_width=True)
-            st.button("IGNORE & DELETE", use_container_width=True)
-            
-            st.markdown("<hr style='border-color: #2a3548; margin: 10px 0;'>", unsafe_allow_html=True)
-            actions = suggest_action(sms_input, category, links)
-            
-            for act in actions:
-                # Translating the actions dynamically if language is selected
-                if "English" not in lang:
-                    try:
-                        display_act = GoogleTranslator(source='auto', target=target_lang).translate(act)
-                    except:
-                        display_act = act
-                else:
-                    display_act = act
+            # Wrapped Actions in an is_spam check
+            if is_spam:
+                st.button("REPORT SMS", use_container_width=True)
+                st.button("BLOCK SENDER", use_container_width=True)
+                st.button("IGNORE & DELETE", use_container_width=True)
                 
-                st.markdown(f"<p style='font-size: 0.8em; margin-bottom: 4px;'>{display_act}</p>", unsafe_allow_html=True)
-            
+                st.markdown("<hr style='border-color: #2a3548; margin: 10px 0;'>", unsafe_allow_html=True)
+                actions = suggest_action(sms_input, category, links)
+                
+                for act in actions:
+                    # Translating the actions dynamically if language is selected
+                    if "English" not in lang:
+                        try:
+                            display_act = GoogleTranslator(source='auto', target=target_lang).translate(act)
+                        except:
+                            display_act = act
+                    else:
+                        display_act = act
+                    
+                    st.markdown(f"<p style='font-size: 0.8em; margin-bottom: 4px;'>{display_act}</p>", unsafe_allow_html=True)
+            else:
+                # Fallback UI for safe messages
+                st.markdown("<p style='color: #00ff00; margin-top: 20px; font-weight: bold; text-align: center;'>✅ Safe message.</p>", unsafe_allow_html=True)
+                st.markdown("<p style='color: #888; text-align: center;'>No action required.</p>", unsafe_allow_html=True)
+
             st.markdown("</div>", unsafe_allow_html=True)
