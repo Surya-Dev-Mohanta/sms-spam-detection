@@ -339,8 +339,17 @@ if st.session_state.analyze_clicked:
             st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
             st.markdown("##### 🎯 SPAM CONFIDENCE")
             
-            risk_color = "#ff4b4b" if is_spam else "#00ff00"
-            risk_level = "High Risk" if is_spam else "Low Risk"
+            # --- UPDATED LOGIC FOR 3-TIER RISK LEVELS ---
+            if confidence < 33.33:
+                risk_level = "Low Risk"
+                risk_color = "#00ff00"  # Green
+            elif confidence < 66.66:
+                risk_level = "Medium Risk"
+                risk_color = "#ffa500"  # Yellow
+            else:
+                risk_level = "High Risk"
+                risk_color = "#ff4b4b"  # Red
+
             category = categorize_message(sms_input)
 
             fig = go.Figure(go.Indicator(
