@@ -42,13 +42,13 @@ st.markdown("""
     div[data-testid="stVerticalBlock"] > div:nth-child(2) button { background-color: #ffa500; color: white; }
     div[data-testid="stVerticalBlock"] > div:nth-child(3) button { background-color: #555555; color: white; }
     
-    /* FIX: Target Streamlit's native columns to act as the dark cards */
-    [data-testid="column"] { 
-        background-color: #1a2332; 
-        padding: 20px; 
-        border-radius: 10px; 
-        border: 1px solid #2a3548; 
-        box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+    /* FIX: Force Streamlit columns to perfectly wrap content in dark boxes */
+    [data-testid="column"], [data-testid="stColumn"] { 
+        background-color: #1a2332 !important; 
+        padding: 15px !important; 
+        border-radius: 10px !important; 
+        border: 1px solid #2a3548 !important; 
+        box-shadow: 0 4px 6px rgba(0,0,0,0.2) !important;
     }
     
     .suspicious-pill { display: inline-block; background-color: rgba(255, 75, 75, 0.15); color: #ff4b4b; border: 1px solid #ff4b4b; padding: 4px 10px; border-radius: 15px; margin: 4px; font-size: 0.85em; font-weight: bold; }
@@ -303,7 +303,7 @@ if st.session_state.analyze_clicked:
 
         col1, col2, col3, col4 = st.columns(4)
 
-        # Col 1: Elements (No more manual <div> tags)
+        # Col 1: Elements
         with col1:
             st.markdown("##### 🚨 SUSPICIOUS ELEMENTS")
             found_words = extract_suspicious_words(sms_input)
