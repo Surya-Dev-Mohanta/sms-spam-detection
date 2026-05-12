@@ -282,19 +282,19 @@ if st.session_state.analyze_clicked:
         is_spam = pred == 1
         confidence = prob * 100
 
-        # Banner
+        # Responsive & Super-Sized Banner
         if is_spam:
             st.markdown(f"""
-            <div style="background-color: rgba(255, 0, 0, 0.1); border: 1px solid #ff4b4b; border-radius: 8px; padding: 15px; margin-top: 15px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center;">
-                <h2 style="color: #ff4b4b; margin: 0;">⚠️ ANALYSIS RESULT: SPAM DETECTED</h2>
-                <h2 style="color: #ff4b4b; margin: 0;">{confidence:.1f}%<span style="font-size: 0.5em; color: #888; display: block; text-align: right;">SPAM PROBABILITY</span></h2>
+            <div style="background-color: rgba(255, 0, 0, 0.1); border: 2px solid #ff4b4b; border-radius: 12px; padding: 25px 30px; margin-top: 15px; margin-bottom: 25px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 15px; box-shadow: 0 4px 15px rgba(255, 75, 75, 0.2);">
+                <div style="color: #ff4b4b; font-size: clamp(1.8rem, 3.5vw, 3rem); font-weight: 900; margin: 0; line-height: 1.1;">⚠️ ANALYSIS RESULT: SPAM DETECTED</div>
+                <div style="color: #ff4b4b; font-size: clamp(3rem, 6vw, 5rem); font-weight: 900; margin: 0; text-align: right; line-height: 1;">{confidence:.1f}%<span style="font-size: clamp(0.9rem, 1.5vw, 1.2rem); color: #888; display: block; text-align: right; font-weight: 600; letter-spacing: 1.5px; margin-top: 8px;">SPAM PROBABILITY</span></div>
             </div>
             """, unsafe_allow_html=True)
         else:
              st.markdown(f"""
-            <div style="background-color: rgba(0, 255, 0, 0.1); border: 1px solid #00ff00; border-radius: 8px; padding: 15px; margin-top: 15px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center;">
-                <h2 style="color: #00ff00; margin: 0;">✅ ANALYSIS RESULT: SAFE MESSAGE</h2>
-                <h2 style="color: #00ff00; margin: 0;">{confidence:.1f}%<span style="font-size: 0.5em; color: #888; display: block; text-align: right;">SPAM PROBABILITY</span></h2>
+            <div style="background-color: rgba(0, 255, 0, 0.1); border: 2px solid #00ff00; border-radius: 12px; padding: 25px 30px; margin-top: 15px; margin-bottom: 25px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 15px; box-shadow: 0 4px 15px rgba(0, 255, 0, 0.2);">
+                <div style="color: #00ff00; font-size: clamp(1.8rem, 3.5vw, 3rem); font-weight: 900; margin: 0; line-height: 1.1;">✅ ANALYSIS RESULT: SAFE MESSAGE</div>
+                <div style="color: #00ff00; font-size: clamp(3rem, 6vw, 5rem); font-weight: 900; margin: 0; text-align: right; line-height: 1;">{confidence:.1f}%<span style="font-size: clamp(0.9rem, 1.5vw, 1.2rem); color: #888; display: block; text-align: right; font-weight: 600; letter-spacing: 1.5px; margin-top: 8px;">SPAM PROBABILITY</span></div>
             </div>
             """, unsafe_allow_html=True)
 
@@ -339,7 +339,6 @@ if st.session_state.analyze_clicked:
             st.markdown("<div style='text-align: center;'>", unsafe_allow_html=True)
             st.markdown("##### 🎯 SPAM CONFIDENCE")
             
-            # --- UPDATED LOGIC FOR 3-TIER RISK LEVELS ---
             if confidence < 33.33:
                 risk_level = "Low Risk"
                 risk_color = "#00ff00"  # Green
