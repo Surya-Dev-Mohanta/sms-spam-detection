@@ -22,7 +22,7 @@ except LookupError:
 # ==============================
 # PAGE CONFIGURATION & STATE
 # ==============================
-st.set_page_config(page_title="SMS SENTINEL", page_icon="🛡️", layout="wide")
+st.set_page_config(page_title="SMS SPAM DETECTION", page_icon="🛡️", layout="wide")
 
 # Initialize session state so results don't disappear on language change
 if "analyze_clicked" not in st.session_state:
@@ -260,7 +260,7 @@ def suggest_action(text, category, links):
 # UI RENDERING
 # ==============================
 
-st.title("🛡️ SMS SENTINEL")
+st.title("🛡️ SMS SPAM DETECTION")
 st.markdown("<p style='color: #888; margin-top: -15px;'>AI-Powered Spam Detection</p>", unsafe_allow_html=True)
 
 st.markdown("### SMS INPUT")
