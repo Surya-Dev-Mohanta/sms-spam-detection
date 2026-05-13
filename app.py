@@ -22,7 +22,7 @@ except LookupError:
 # ==============================
 # PAGE CONFIGURATION & STATE
 # ==============================
-st.set_page_config(page_title="SMS Sentinel", page_icon="🛡️", layout="wide")
+st.set_page_config(page_title="SMS Spam Detection", page_icon="🛡️", layout="wide")
 
 # Initialize session state so results don't disappear on language change
 if "analyze_clicked" not in st.session_state:
