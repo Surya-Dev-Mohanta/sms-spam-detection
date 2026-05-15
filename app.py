@@ -119,7 +119,7 @@ suspicious_words = [
     "customs", "courier", "job", "salary", "work from home", "part time", "investment",
     "crypto", "bitcoin", "trading", "casino", "bet", "gaming", "support", "customer care",
     "subscription", "renewal", "pay now", "call now", "immediately", "act now",
-    "security alert", "suspicious activity", "wallet", "phonepe", "google pay", "paytm"
+    "security alert", "suspicious activity", "wallet", "phonepe", "google pay", "paytm", "kshirabdhi"
 ]
 
 def detect_links(text):
